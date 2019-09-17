@@ -1,4 +1,4 @@
-import copy
+import copy, operator
 from collections import deque
 #Setup starting position (Randomly choosen)
 # 0 5 2
@@ -14,13 +14,14 @@ from collections import deque
 #Some more test cases
 #board = [['0','5','2'],['1','4','3'],['7','8','6']]
 #board = [['2','4','0'],['1','6','3'],['7','5','8']]
-board = [['2','4','3'],['1','5','6'],['0','7','8']]
+#board = [['2','4','3'],['1','5','6'],['0','7','8']]
+board = [['8','6','7'],['2','5','4'],['3','0','1']]
 #board = [['2','0','3'],['1','4','5'],['7','8','6']]
 
 des_board = [['1','2','3'],['4','5','6'],['7','8','0']]
 x = len(board[0])
 y = len(board)
-heurstic = False
+heurstic = True
 
 #Small function that prints the board in an easy readable format
 def print_board(board_to_print):
@@ -34,7 +35,10 @@ def print_board(board_to_print):
 
 #This program is tested with the board above, but it should work on any N*N board
 def program():
-	res = bfs(board)
+	if heurstic:
+		res = a_star(board)
+	else: 
+		res = bfs(board)
 	if res[0]:
 		print("Solved in ", len(res[1])," moves")
 	else:
@@ -58,6 +62,27 @@ def bfs(start_node):
 			if parse_board(child) not in visited:
 				queue.appendleft(child)
 	return [False]
+
+def a_star(start_state):
+	visited = []
+	#queue = list([start_state])
+	sorted_list = [(parse_board(start_state),get_heurstic_value(start_state))]
+	#while len(queue) > 0:
+	finished = False
+	while not finished:
+		state = parse_board_back(sorted_list.pop(0)[0])
+		if parse_board(state) in visited:
+			continue
+		visited.append(parse_board(state))
+		if parse_board(state) == parse_board(des_board):
+			finished = True
+			continue
+		children = find_new_states(state, visited)
+		sorted_list.extend(children)
+		sorted_list = sorted(sorted_list, key = lambda x: x[1])
+	return [finished,visited]
+		
+
 #Finds the possible new states of the board, if heuristic is turned on (True) it will also choose the best new state conform the find_best_state() function
 def find_new_states(board_state_current,visited=[]):
 	zero_pos = []
@@ -131,6 +156,19 @@ def parse_board(board_state):
 			board_str += num
 	return board_str
 
+#Parses a board string back to an array
+def parse_board_back(board_string):
+	board = []
+	row = []
+	for a in range(1,len(board_string)+1):
+		if a % x != 0:
+			row.append(board_string[a-1])
+		else:
+			row.append(board_string[a-1])
+			board.append(row)
+			row = []
+	return board
+
 #Gets the total score of a board, the score is calculated by taking the sum of the number of moves each number has to make to get to his desired spot
 def get_heurstic_value(c_board):
 	current_board_num_dict = {}
@@ -161,25 +199,14 @@ def get_heurstic_value(c_board):
 def find_best_state(board_states):
 	best_h_val = -1
 	options = []
+	choices = {}
 	for board_state in board_states:
 		h_val = get_heurstic_value(board_state)
-		if best_h_val == -1:
-			best_h_val = h_val
-			options.append(board_state)
-
-		elif h_val == best_h_val: #If a board state is equaly good as the current option it is also added to the list of options
-			best_h_val = h_val
-			options.append(board_state)
-
-		elif h_val < best_h_val:
-			best_h_val = h_val
-			options = []
-			options.append(board_state)
+		choices[parse_board(board_state)] = h_val
 
 	#Add the rest of the options add the back
-	# for board_state in board_states:
-	# 	if board_state not in options:
-	# 		options.append(board_state)
-	return options
+	sorted_choices = sorted(choices.items(), key=operator.itemgetter(1))
+
+	return sorted_choices
 
 program()
