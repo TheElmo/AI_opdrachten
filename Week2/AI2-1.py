@@ -5,10 +5,14 @@ import itertools
 import math
 from collections import namedtuple
 from copy import deepcopy
+from functools import lru_cache
+from numpy import ones,vstack
+from numpy.linalg import lstsq
 
 # based on Peter Norvig's IPython Notebook on the TSP
 
 City = namedtuple('city', 'x y')
+connections = {}
 def distance(A, B):
     return math.hypot(A.x - B.x, A.y - B.y)
 
@@ -35,9 +39,55 @@ def nearest_neighbor(cities):
             elif travel_distance < small_distance:
                 city = neighbor
                 small_distance = travel_distance
-    result = two_opt(visited_cities)
-    #result = visited_cities
+    result = visited_cities
     return result
+# line = get_linear(city_x_value,city_y_value,neighbor_x_value,neighbor_y_value)
+#     key = create_key(city_x_value,city_y_value,neighbor_x_value,neighbor_y_value)
+#     connections[key] = line
+def nearest_neighbor_2opt(cities):
+    nn_result = nearest_neighbor(cities)
+    return find_crossings(nn_result)
+
+def find_crossings(route):
+    iterator = iter(route)
+    city = next(iterator)
+    previous_city = deepcopy(city)
+    finished = False
+    #print(connections.keys())
+    #print(connections['29914137582'])
+    while not finished:
+        try:
+            city = next(iterator)
+            #print(previous_city)
+            #print(city)
+        except StopIteration:
+            finished = True
+        else:
+            x1,y1 = previous_city[0], previous_city[1]
+            x2,y2 = city[0], city[1]
+            connection = None
+            try:
+                connection = connections[create_key(x1,y1,x2,y2)]
+            except KeyError:
+                pass
+            print(previous_city, city)
+            previous_city = deepcopy(city)
+            print(connection)
+    return route
+
+@lru_cache(maxsize=None)
+def linear_function(a,x,b):
+    return a*x +b
+
+def get_linear(x1,y1,x2,y2):
+    points = [(x1,y1),(x2,y2)]
+    x_coords, y_coords = zip(*points)
+    val = vstack([x_coords,ones(len(x_coords))]).T
+    a, b = lstsq(val, y_coords,rcond=None)[0]
+    return [a,b]
+
+def create_key(x1,y1,x2,y2):
+    return "{0:d}{1:d}{2:d}{3:d}".format(x1,y1,x2,y2)
 
 #Calculates the travel distance from a city to a neighbor
 def calculate_travel_distance(city, neighbor):
@@ -46,7 +96,7 @@ def calculate_travel_distance(city, neighbor):
 
     neighbor_x_value = neighbor[0]
     neighbor_y_value = neighbor[1]
-
+    
     horizontal_distance = abs(city_x_value - neighbor_x_value)
     vertical_distance = abs(city_y_value - neighbor_y_value)
     travel_distance = horizontal_distance + vertical_distance
@@ -68,32 +118,6 @@ def cost(route):
             total_distance += distance
             previous_city = deepcopy(city)
     return total_distance
-
-
-def two_opt(route):
-     best = route
-     improved = True
-     while improved:
-          improved = False
-          for i in range(1, len(route)-2):
-               for j in range(i+1, len(route)):
-                    if j-i == 1:
-                        continue
-                    new_route = route[:]
-                    print("route_sub ",new_route[i:j])
-                    print("new_route_sub", route[j-1:i-1:-1])
-                    print("-----")
-                    new_route[i:j] = route[j-1:i-1:-1]
-                    print("old_route", route)
-                    print("new_route", new_route)
-                    print("+++")
-                    # print("cost old", cost(best))
-                    # print("cost new", cost(new_route))
-                    if cost(new_route) < cost(best):
-                         best = new_route
-                         improved = True
-          route = best
-     return best
 
 def alltours(cities):
     # return a list of tours (a list of lists), each tour a permutation of cities,
@@ -139,7 +163,10 @@ def plot_tsp(algorithm, cities):
     
 #plot_tsp(try_all_tours, make_cities(10))
 #A
-plot_tsp(nearest_neighbor,make_cities(10))
+#plot_tsp(nearest_neighbor,make_cities(10))
 
 #B
-# Total distance797860
+# Total distance for 500 cities: 797860
+
+#D
+plot_tsp(nearest_neighbor_2opt,make_cities(10))
