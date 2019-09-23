@@ -13,6 +13,7 @@ from numpy.linalg import lstsq
 
 City = namedtuple('city', 'x y')
 connections = {}
+@lru_cache(maxsize=None)
 def distance(A, B):
     return math.hypot(A.x - B.x, A.y - B.y)
 
@@ -32,7 +33,7 @@ def nearest_neighbor(cities):
                 continue
             if neighbor in visited_cities:
                 continue
-            travel_distance = calculate_travel_distance(city,neighbor)
+            travel_distance = distance(city,neighbor)
             if small_distance == 0:
                 city = neighbor
                 small_distance = travel_distance
@@ -45,7 +46,11 @@ def nearest_neighbor(cities):
 def nearest_neighbor_2opt(cities):
     nn_result = nearest_neighbor(cities)
     find_linear_functions(cities)
-    return find_crossings(nn_result)
+    route = find_crossings(nn_result)
+    for x in range(10000):
+        print("gone through", x , "times")
+        route = find_crossings(route)
+    return route
 
 def find_linear_functions(cities):
     for city in cities:
@@ -73,23 +78,25 @@ def find_crossings(route):
             data2 = get_connection(route,a)
             connection1 = data[1]
             key1 = data[0]
+            connection2 = data2[1]
+            key2 = data2[0]
+
             index1 = data[2]
             index2 = data[3]
             index3 = data2[2]
             index4 = data2[3]
-            connection2 = data2[1]
-            key2 = data2[0]
-            crossings = check_for_crossing(key1,key2,connection1,connection2, index1,index2,index3,index4)
-            for crossing in crossings:
-                city_index1 = crossings[crossing][0]
-                city_index2 = crossings[crossing][1]
-                city_index3 = crossings[crossing][2]
-                city_index4 = crossings[crossing][3]
-                #Break and reconnect
-                print(city_index1,city_index2,city_index3,city_index4)
+
+            segment1 = get_xy_values(key1)
+            segment2 = get_xy_values(key2)
+            if does_cross(segment1,segment2):
+                # print(segment1, ' and ', segment2, " cross")
+                # print(index1,index2,index3,index4)
                 new_route = route.copy()
-                new_route[city_index2:city_index3+1] = reversed(route[city_index2:city_index3+1])
-                if cost(new_route) > cost(route):
+                #NOT SURE HOW TO FLIP, WITHOUT +1 it doesn't work?
+                old_distance = distance(route[min(index1,index2)],route[max(index1,index2)]) + distance(route[min(index3,index4)],route[max(index3,index4)])
+                new_route[index2:index3+1] = reversed(route[index2:index3+1])
+                new_distance = distance(new_route[min(index1,index2)],new_route[max(index1,index2)]) + distance(new_route[min(index3,index4)],new_route[max(index3,index4)])
+                if new_distance < old_distance:
                     route = new_route.copy()
     return route
 
@@ -115,61 +122,56 @@ def get_connection(route,index):
             pass
     return [key,connection,index,next_index]
 
-def get_bounds(key,connection):
+def get_xy_values(key):
     city1 = key.split("|")[0]
     city2 = key.split("|")[1]
     x_value1 = int(city1.split(":")[0])
     y_value1 = int(city1.split(":")[1])
     x_value2 = int(city2.split(":")[0])
     y_value2 = int(city2.split(":")[1])
-    if x_value1 < x_value2:
-        low_x = x_value1
-        high_x = x_value2
-    else:
-        low_x = x_value2
-        high_x = x_value1
+    return [x_value1,y_value1,x_value2,y_value2]
 
-    if y_value1 < y_value2:
-        low_y = y_value1
-        high_y = y_value2
-    else:
-        low_y = y_value2
-        high_y = y_value1
-    return [[low_x,high_x],[low_y,high_y]]
+def does_cross(segment1,segment2):
+    #Naar https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
+    x1 = segment1[0]
+    x2 = segment1[2]
+    x3 = segment2[0]
+    x4 = segment2[2]
 
-def check_for_crossing(key1,key2,connection1,connection2,index1,index2,index3,index4):
-    crossings = {}
-    bounds_y1 = get_bounds(key1,connection1)
-    bounds_y2 = get_bounds(key2,connection2)
-    y1_vals = {}
-    y2_vals = {}
-    for x in range(bounds_y1[0][0]+1, bounds_y1[0][1]):
-        y1 = int(linear_function(connection1[0],x,connection1[1]))
-        y1_vals[x] = y1
-    for x in range(bounds_y2[1][0]+1, bounds_y2[1][1]):
-        y2 = int(linear_function(connection2[0],x,connection2[1]))
-        y2_vals[x] = y2
-    print("++++")
-    for key in y1_vals.keys():
-        if key in y2_vals:
-            print(key,y1_vals[key],y2_vals[key])
-        print("-----")
-        value = y1_vals[key]
-        if key in y2_vals and value == y2_vals[key]:
-            print("CROSSING")
-            try:
-                crossings[value] = None
-                crossings[y2_vals[key]] = None #Check if crossing was already found, other way round
-                crossings[value] = [index1,index2,index3,index4]
-            except KeyError:
-                #Crossing already exists, nothing to do
-                pass
-    return crossings
+    y1 = segment1[1]
+    y2 = segment1[3]
+    y3 = segment2[1]
+    y4 = segment2[3]
+
+    if (max(x1,x2) < min(x3,x4)):
+        return False #There are no shared x coordinates
+    try:
+        a1 = (y1-y2)/(x1-x2)
+        a2 = (y3-y4)/(x3-x4)
+    except ZeroDivisionError:
+        return False
+    b1 = y1-a1*x1 #= y2-a1*x2
+    b2 = y3-a2*x3 #= y4-a2*x4
+
+    if a1 == a2:
+        return False #Lines are parralel and will never cross
+
+    try:
+        Xa = round((b2-b1) / (a1-a2))
+    except ZeroDivisionError:
+        return False
+    if Xa in segment1 or Xa in segment2:
+        return False #Crossing exists but is multual city
+    if Xa < max( min(x1,x2), min(x3,x4) ) or Xa > min( max(x1,x2), max(x3,x4) ):
+        return False
+    else:
+        return True
 
 @lru_cache(maxsize=None)
 def linear_function(a,x,b):
     return (a*x) +b
 
+@lru_cache(maxsize=None)
 def get_linear(x1,y1,x2,y2):
     points = [(x1,y1),(x2,y2)]
     x_coords, y_coords = zip(*points)
@@ -181,19 +183,6 @@ def get_linear(x1,y1,x2,y2):
 
 def create_key(x1,y1,x2,y2):
     return "{0:d}:{1:d}|{2:d}:{3:d}".format(x1,y1,x2,y2)
-
-#Calculates the travel distance from a city to a neighbor
-def calculate_travel_distance(city, neighbor):
-    city_x_value = city[0]
-    city_y_value = city[1]
-
-    neighbor_x_value = neighbor[0]
-    neighbor_y_value = neighbor[1]
-    
-    horizontal_distance = abs(city_x_value - neighbor_x_value)
-    vertical_distance = abs(city_y_value - neighbor_y_value)
-    travel_distance = horizontal_distance + vertical_distance
-    return travel_distance
 
 def cost(route):
     finished = False
@@ -207,8 +196,8 @@ def cost(route):
         except StopIteration:
             finished = True
         else:
-            distance = calculate_travel_distance(previous_city,city)
-            total_distance += distance
+            con_distance = distance(previous_city,city)
+            total_distance += con_distance
             previous_city = deepcopy(city)
     return total_distance
 
@@ -228,7 +217,7 @@ def tour_length(tour):
 def make_cities(n, width=1000, height=1000):
     # make a set of n cities, each with random coordinates within a rectangle (width x height).
 
-    random.seed(10) # the current system time is used as a seed
+    random.seed(1) # the current system time is used as a seed
     # note: if we use the same seed, we get the same set of cities
 
     return frozenset(City(random.randrange(width), random.randrange(height))
@@ -256,10 +245,10 @@ def plot_tsp(algorithm, cities):
     
 #plot_tsp(try_all_tours, make_cities(10))
 #A
-#plot_tsp(nearest_neighbor,make_cities(10))
+#plot_tsp(nearest_neighbor,make_cities(500))
 
 #B
 # Total distance for 500 cities: 797860
 
 #D
-plot_tsp(nearest_neighbor_2opt,make_cities(10))
+plot_tsp(nearest_neighbor_2opt,make_cities(500))
