@@ -45,10 +45,10 @@ def nearest_neighbor(cities):
 
 def nearest_neighbor_2opt(cities):
     nn_result = nearest_neighbor(cities)
-    find_linear_functions(cities)
+    #find_linear_functions(cities)
     route = find_crossings(nn_result)
     for x in range(10000):
-        print("gone through", x , "times")
+        #print("gone through", x , "times")
         route = find_crossings(route)
     return route
 
@@ -69,23 +69,40 @@ def find_crossings(route):
         for a in (range(int(len(route)))):
             if i == a:
                 continue
+            if i+1 == a:
+                continue
             comb_key = str(i) + str(a)
             comb_key = "".join(sorted(comb_key))
             if comb_key in visited_combinations:
                 continue
             visited_combinations.append(comb_key)
-            data = get_connection(route,i)
-            data2 = get_connection(route,a)
-            connection1 = data[1]
-            key1 = data[0]
-            connection2 = data2[1]
-            key2 = data2[0]
+            #--------- SWITCH THESE AROUND TO NOTICE TIME DIFF, (Don't forget to switch find_linear_functions(cities) with it)
+            # data = get_connection(route,i)
+            # data2 = get_connection(route,a)
+            # connection1 = data[1]
+            # key1 = data[0]
+            # connection2 = data2[1]
+            # key2 = data2[0]
 
-            index1 = data[2]
-            index2 = data[3]
-            index3 = data2[2]
-            index4 = data2[3]
+            # index1 = data[2]
+            # index2 = data[3]
+            # index3 = data2[2]
+            # index4 = data2[3]
+            #---------
+            next_i = i+1
+            if next_i > len(route)-1:
+                next_i = 0
+            next_a = a+1
+            if next_a > len(route)-1:
+                next_a = 0
+            index1 = i
+            index2 = next_i
+            index3 = a
+            index4 = next_a
 
+            key1 = create_key(route[i].x,route[i].y,route[next_i].x,route[next_i].y)
+            key2 = create_key(route[a].x,route[a].y,route[next_a].x,route[next_a].y)
+            #---------
             segment1 = get_xy_values(key1)
             segment2 = get_xy_values(key2)
             if does_cross(segment1,segment2):
@@ -217,7 +234,7 @@ def tour_length(tour):
 def make_cities(n, width=1000, height=1000):
     # make a set of n cities, each with random coordinates within a rectangle (width x height).
 
-    random.seed(1) # the current system time is used as a seed
+    random.seed(1293862394623946) # the current system time is used as a seed
     # note: if we use the same seed, we get the same set of cities
 
     return frozenset(City(random.randrange(width), random.randrange(height))
@@ -251,4 +268,4 @@ def plot_tsp(algorithm, cities):
 # Total distance for 500 cities: 797860
 
 #D
-plot_tsp(nearest_neighbor_2opt,make_cities(500))
+plot_tsp(nearest_neighbor_2opt,make_cities(30))
