@@ -59,12 +59,16 @@ def find_linear_functions(cities):
                 connections[key] = line
 
 def find_crossings(route):
+    visited_combinations = []
     for i in (range(int(len(route)))):
         for a in (range(int(len(route)))):
-            print("I:",i,"A:",a)
-
             if i == a:
                 continue
+            comb_key = str(i) + str(a)
+            comb_key = "".join(sorted(comb_key))
+            if comb_key in visited_combinations:
+                continue
+            visited_combinations.append(comb_key)
             data = get_connection(route,i)
             data2 = get_connection(route,a)
             connection1 = data[1]
@@ -75,14 +79,18 @@ def find_crossings(route):
             index4 = data2[3]
             connection2 = data2[1]
             key2 = data2[0]
-            crossings = check_y(key1,connection1,connection2, index1,index2,index3,index4)
+            crossings = check_for_crossing(key1,key2,connection1,connection2, index1,index2,index3,index4)
             for crossing in crossings:
                 city_index1 = crossings[crossing][0]
                 city_index2 = crossings[crossing][1]
                 city_index3 = crossings[crossing][2]
                 city_index4 = crossings[crossing][3]
-
-                print(crossings[crossing])
+                #Break and reconnect
+                print(city_index1,city_index2,city_index3,city_index4)
+                new_route = route.copy()
+                new_route[city_index2:city_index3+1] = reversed(route[city_index2:city_index3+1])
+                if cost(new_route) > cost(route):
+                    route = new_route.copy()
     return route
 
 def get_connection(route,index):
@@ -105,62 +113,57 @@ def get_connection(route,index):
         except KeyError:
             print("Help")
             pass
-    return [key,connection,index,index+1]
+    return [key,connection,index,next_index]
 
-def get_coordinates(key,connection):
+def get_bounds(key,connection):
     city1 = key.split("|")[0]
     city2 = key.split("|")[1]
-    x_value1 = float(city1.split(":")[0])
-    y_value1 = float(city1.split(":")[1])
-    x_value2 = float(city2.split(":")[0])
-    y_value2 = float(city2.split(":")[1])
-    return [[x_value1,x_value2],[y_value1,y_value2]]
+    x_value1 = int(city1.split(":")[0])
+    y_value1 = int(city1.split(":")[1])
+    x_value2 = int(city2.split(":")[0])
+    y_value2 = int(city2.split(":")[1])
+    if x_value1 < x_value2:
+        low_x = x_value1
+        high_x = x_value2
+    else:
+        low_x = x_value2
+        high_x = x_value1
 
-def check_y(key1,connection1,connection2,index1,index2,index3,index4):
+    if y_value1 < y_value2:
+        low_y = y_value1
+        high_y = y_value2
+    else:
+        low_y = y_value2
+        high_y = y_value1
+    return [[low_x,high_x],[low_y,high_y]]
+
+def check_for_crossing(key1,key2,connection1,connection2,index1,index2,index3,index4):
     crossings = {}
-    xy_values = get_coordinates(key1,connection1)
-    #print(xy_values)
-    x_values = xy_values[0]
-    y_values = xy_values[1]
-    if x_values[0] < x_values[1]:
-        low_x = x_values[0]
-        high_x = x_values[1]
-    else:
-        low_x = x_values[1]
-        high_x = x_values[0]
-
-    if y_values[0] < y_values[1]:
-        low_y = y_values[0]
-        high_y = y_values[1]
-    else:
-        low_y = y_values[1]
-        high_y = y_values[0]
-    print(low_x,high_x,low_y,high_y)
-    #FIX X bound
-    for x in range(int(low_x)+1, int(high_x)):
-        #print("Findin y for x:", x)
+    bounds_y1 = get_bounds(key1,connection1)
+    bounds_y2 = get_bounds(key2,connection2)
+    y1_vals = {}
+    y2_vals = {}
+    for x in range(bounds_y1[0][0]+1, bounds_y1[0][1]):
         y1 = int(linear_function(connection1[0],x,connection1[1]))
+        y1_vals[x] = y1
+    for x in range(bounds_y2[1][0]+1, bounds_y2[1][1]):
         y2 = int(linear_function(connection2[0],x,connection2[1]))
-        # print(y1,y2)
-        # print(low_y,high_y)
-        lowest_y = None
-        highest_y = None
-        if y1 > y2:
-            lowest_y = y1
-            highest_y = y2
-        else:
-            lowest_y = y2
-            highest_y = y2
-
-        if lowest_y < low_y:
-            continue
-        if highest_y >= high_y:
-            break
-        if y1 == y2:
-            crossings[y1] = [index1,index2,index3,index4]
-            print("HERE")
-            print(y1,y2)
-    # print("---")
+        y2_vals[x] = y2
+    print("++++")
+    for key in y1_vals.keys():
+        if key in y2_vals:
+            print(key,y1_vals[key],y2_vals[key])
+        print("-----")
+        value = y1_vals[key]
+        if key in y2_vals and value == y2_vals[key]:
+            print("CROSSING")
+            try:
+                crossings[value] = None
+                crossings[y2_vals[key]] = None #Check if crossing was already found, other way round
+                crossings[value] = [index1,index2,index3,index4]
+            except KeyError:
+                #Crossing already exists, nothing to do
+                pass
     return crossings
 
 @lru_cache(maxsize=None)
@@ -225,7 +228,7 @@ def tour_length(tour):
 def make_cities(n, width=1000, height=1000):
     # make a set of n cities, each with random coordinates within a rectangle (width x height).
 
-    random.seed(1) # the current system time is used as a seed
+    random.seed(10) # the current system time is used as a seed
     # note: if we use the same seed, we get the same set of cities
 
     return frozenset(City(random.randrange(width), random.randrange(height))
