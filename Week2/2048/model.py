@@ -154,46 +154,64 @@ def test():
 def get_random_move():
     return random.choice(list(MERGE_FUNCTIONS.keys()))
 
-def get_expectimax_move(b):
-    temp_board= copy.deepcopy(b)
-    board_left = play_move(temp_board,"left")
+def compare(A, B):
+    stringA = combine_rows(A)
+    stringB = combine_rows(B)
+    return stringA == stringB
 
-    temp_board= copy.deepcopy(b)
-    board_up = play_move(temp_board,"up")
+def combine_rows(board):
+    row_string = ''
+    for row in board:
+        for num in row:
+            row_string += str(num)
+    return row_string
 
-    temp_board= copy.deepcopy(b)
-    board_right = play_move(temp_board,'right')
-
-    temp_board= copy.deepcopy(b)
-    board_down = play_move(temp_board,'down')
-
-    left_val = get_heuristic_board_value(board_left)
-    right_val = get_heuristic_board_value(board_up)
-    up_val = get_heuristic_board_value(board_right)
-    down_val = get_heuristic_board_value(board_down)
-
-    if left_val == max(left_val,right_val,up_val,down_val):
-        return 'left'
-    elif right_val == max(left_val,right_val,up_val,down_val):
-        return 'right'
-    elif up_val == max(left_val,right_val,up_val,down_val):
-        return 'up'
+def get_new_board(direction,board):
+    temp_board= copy.deepcopy(board)
+    new_board = play_move(temp_board,direction)
+    if compare(temp_board,new_board):
+        return False
     else:
-        return 'down'
-    pass
+        new_board_val = get_highest_value(new_board)
+    return [new_board,new_board_val]
+def get_expectimax_move(b):
+    board_left,board_up,board_right,board_down = None,None,None,None
+    high_val = get_highest_value(b)
+    old_sum = get_board_sum(b)
+    print(old_sum)
 
-def check_highest_value_location(location):
-    #Checks if location is top left corner
-    if location[0] == 0 and location[1] == 0:
-        return True
-    return False
+    res_left = get_new_board("left",b)
+    if res_left:
+        board_left = res_left[0]
+    res_up = get_new_board("up",b)
+    if res_up:
+        board_up = res_up[0]
+    res_right = get_new_board("right",b)
+    if res_right:
+        board_right = res_right[0]
+    res_down = get_new_board("down",b)
+    if res_up:
+        board_down = res_down[0]
 
-def get_heuristic_board_value(b):
-    #Highest val in top left = 100 points
-    #Empty in top left = -100 points
-    #Same values on the same row = 10 points
-    board_score = 0
-    highest_weight = 100
+    left_val = get_heuristic_board_value(board_left,high_val,old_sum)
+    up_val = get_heuristic_board_value(board_up,high_val,old_sum)
+    right_val = get_heuristic_board_value(board_right,high_val,old_sum)
+    down_val = get_heuristic_board_value(board_down,high_val,old_sum)
+
+    choice = ''
+    if left_val == max(left_val,right_val,up_val,down_val):
+        choice =  'left'
+    if right_val == max(left_val,right_val,up_val,down_val):
+        choice = 'right'
+    if up_val == max(left_val,right_val,up_val,down_val):
+        choice = 'up'
+    if down_val == max(left_val,right_val,up_val,down_val):
+        choice = 'down'
+    print(choice)
+    #Use choice to get its children and take avg of the 4 values
+    return choice
+
+def get_highest_value(b):
     highest_value = 0
     highest_value_location = [0,0]
     for row in range(4):
@@ -203,36 +221,93 @@ def get_heuristic_board_value(b):
                 highest_value = val
                 highest_value_location[0] = row
                 highest_value_location[1] = col
-            
-    if check_highest_value_location(highest_value_location):
-        board_score += highest_weight
+    return [highest_value,highest_value_location]
+
+def check_highest_value_location(location):
+    #Checks if location is top left corner
+    if location[0] == 0 and location[1] == 0:
+        return True
+    return False
+
+def get_board_sum(board):
+    b_sum = 0
+    for row in board:
+        for num in row:
+            b_sum += num
+    return b_sum
+
+def get_heuristic_board_value(b,prev_high_val,old_sum):
+    #Highest val in top left = 9 points
+    #Empty in top left = -9 points
+    #Same values on the same row = 1 point or -1 point
+    if b == None:
+        return -1000 #Absolute low score so it will never be chosen
+    board_score = 0
+    weight1 = 5 #New high on top left
+    weight2 = 0 #No new but old on top left
+    weight3 = 5 #New high but not top left
+    weight4 = 0 #No new high and old not top left
+    weight5 = 0 #Bigger board sum
+    same_line_weight = 0 # A good future row
+
+    high_val_res = get_highest_value(b)
+    new_sum = get_board_sum(b)
+    highest_value = high_val_res[0]
+    highest_value_location = high_val_res[1]
+    if new_sum > old_sum:
+        board_score += weight5 * (new_sum-old_sum)
+    if prev_high_val[0] < highest_value:
+        if check_highest_value_location(highest_value_location):
+            board_score += weight1
+        elif check_highest_value_location(prev_high_val[1]):
+            board_score += (weight2 + weight3)
+        else:
+            board_score += (weight3 + weight4)
     else:
-        board_score -= highest_weight
-    board_score += check_rows_for_heuristic(b)
+        if check_highest_value_location(prev_high_val[1]):
+            board_score += weight2
+        else:
+            board_score += weight4
+    #Score is (verhoogt) by amount of good_future rows, a good_future row
+    # is a row which has atleast 2 the same values which can be combined into one in the future
+    # f.e. 2 0 2 0 is a good future row, 2 4 2 0 is not because a 4 is in the way
+    board_score += check_rows_for_heuristic(b,same_line_weight)
+    board_score += check_cols_for_heuristic(b,same_line_weight)
     return board_score
 
-def check_cols_for_heuristic(b):
+def check_cols_for_heuristic(b,weight):
     valid_cols = []
-    same_line_weight = 10
+    for index in range(4):
+        col_values = []
+        for row in b:
+            col_values.append(row[index])
+        #col_values is now a list of all values in one column
+        valid_cols.extend(check_line(index, col_values))
+    return (weight * len(valid_cols))
 
-def check_rows_for_heuristic(b):
+def check_line(index, values):
+    valid_lines = []
+    has_partner = False
+    for compare_index in range(3):
+        compare_index +=1 #Skip the 0 and go until 3
+        if values[compare_index] == 0 and compare_index != 3: #If current tile is empty skip to next, but only if it is not the last tile in the row
+            continue 
+        if compare_index == index:
+            continue
+        if values[index] == values[compare_index] and values[index] != 0:
+            #If there is atleast one tile in the col_values with the same value it has a partner
+            has_partner = True
+        if values[index] == values[compare_index] or values[compare_index] == 0:
+            #If it has reached the end, is still valid and the col_values contains uninterupted partners it is a valid row
+            if compare_index == 3 and has_partner:
+                valid_lines.append(values)
+        else:
+            break
+    return valid_lines
+
+def check_rows_for_heuristic(b,weight):
     valid_rows = []
-    same_line_weight = 10
     for row in b:
-        #print(row)   
-        start_index = 0
-        has_partner = False
-        for index in range(3):
-            index +=1 #Skip the 0 and go until 3
-            if row[index] == 0: #If current tile is empty skip to next
-                continue 
-            if row[start_index] == row[index]: 
-                #If there is atleast one tile in the row with the same value it has a partner
-                has_partner = True
-            if row[start_index] == row[index] or row[index] == 0:
-                #If it has reached the end, is still valid and the row contains uninterupted partners it is a valid row
-                if index == 3 and has_partner:
-                    valid_rows.append(row)
-            else:
-                break
-    return (same_line_weight * len(valid_rows) + -same_line_weight *(4-len(valid_rows)))
+        for index in range(4):
+            valid_rows.extend(check_line(index,row))
+    return (weight * len(valid_rows))
