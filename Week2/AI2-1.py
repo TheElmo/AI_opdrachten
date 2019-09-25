@@ -47,16 +47,33 @@ def nearest_neighbor(cities):
 #Uses nearest neighbor but afterwards does 10.000 iterations of 2_opt to try and remove crossings
 def nearest_neighbor_2opt(cities):
     nn_result = nearest_neighbor(cities)
-    #find_linear_functions(cities)
     route = find_crossings(nn_result)
-    old_cost = tour_length(route)
-    # for x in range(10000):
-    #     print("gone through", x , "times")
-    #     route = find_crossings(route)
-    #     new_cost = tour_length(route)
-    #     if old_cost >= new_cost:
-    #         break
+    for x in range(10):
+        print("gone through", x , "times")
+        route = find_crossings(route)
     return route
+
+def nearest_neighbor_2opt_real(cities):
+    nn_result = nearest_neighbor(cities)
+    nn_result = nn_result + [nn_result[0]]
+    route = nn_2opt(nn_result)
+    return route
+
+def nn_2opt(route):
+    best = route
+    improved = True
+    while improved:
+        improved = False
+        for i in range(1, len(route)-2):
+           for j in range(i+1, len(route)):
+                if j-i == 1: continue # changes nothing, skip then
+                new_route = route[:]
+                new_route[i:j] = route[j-1:i-1:-1] # this is the 2woptSwap
+                if tour_length(new_route) < tour_length(best):
+                     best = new_route
+                     improved = True
+        route = best
+    return best
 
 
 #Checks each road with all other roads in the route for crossings, 
@@ -178,4 +195,6 @@ def plot_tsp(algorithm, cities):
 # Total distance for 500 cities: 797860
 
 #D
-plot_tsp(nearest_neighbor_2opt,make_cities(500))
+plot_tsp(nearest_neighbor_2opt,make_cities(20))
+
+#plot_tsp(nearest_neighbor_2opt_real,make_cities(75))

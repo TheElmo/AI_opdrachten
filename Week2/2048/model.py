@@ -168,52 +168,47 @@ def combine_rows(board):
 
 def get_new_board(direction,board):
     temp_board= copy.deepcopy(board)
-    new_board = play_move(temp_board,direction)
-    if compare(temp_board,new_board):
-        return False
-    else:
-        new_board_val = get_highest_value(new_board)
-    return [new_board,new_board_val]
-def get_expectimax_move(b):
+    return play_move(temp_board,direction)
+
+
+def get_children(b):
     board_left,board_up,board_right,board_down = None,None,None,None
-    high_val = get_highest_value(b)
-    old_sum = get_board_sum(b)
-    print(old_sum)
+    children = []
+    for direction in list(MERGE_FUNCTIONS.keys()):
+        new_board = get_new_board(direction, b)
+        if new_board != None:
+            children.append((new_board,direction))
+    return children
 
-    res_left = get_new_board("left",b)
-    if res_left:
-        board_left = res_left[0]
-    res_up = get_new_board("up",b)
-    if res_up:
-        board_up = res_up[0]
-    res_right = get_new_board("right",b)
-    if res_right:
-        board_right = res_right[0]
-    res_down = get_new_board("down",b)
-    if res_up:
-        board_down = res_down[0]
+def get_expectimax_move(b):
+    best_move = ""
+    best_value = 0
+    for child in get_children(b):
+        result = expectimax(b)
+        if result[1] > best_value:
+            best_value = result[1]
+            best_move = result[0]
+    return best_move
 
-    left_val = get_heuristic_board_value(board_left,high_val,old_sum)
-    up_val = get_heuristic_board_value(board_up,high_val,old_sum)
-    right_val = get_heuristic_board_value(board_right,high_val,old_sum)
-    down_val = get_heuristic_board_value(board_down,high_val,old_sum)
+def expectimax(b,depth=MAX_DEPTH,move_made=None):
+    if game_state(b) == "win" or depth == 0:
+        return (move_made,get_heuristic_board_value(move_made,b))
+    branch_total = 0
+    best_move = ""
+    best_value = 0
+    children = get_children(b)
+    for child in children:
+        result = expectimax(b,depth-1,child[1])
+        if result[1] > best_value:
+            best_value = result[1]
+            best_move = result[0]
+        branch_total += result[1]
+    return (best_move,branch_total/len(children))
 
-    choice = ''
-    if left_val == max(left_val,right_val,up_val,down_val):
-        choice =  'left'
-    if right_val == max(left_val,right_val,up_val,down_val):
-        choice = 'right'
-    if up_val == max(left_val,right_val,up_val,down_val):
-        choice = 'up'
-    if down_val == max(left_val,right_val,up_val,down_val):
-        choice = 'down'
-    print(choice)
-    #Use choice to get its children and take avg of the 4 values
-    return choice
-
-def get_highest_value(b):
-    highest_value = 0
+def check_highest_value_location(b):
+    #Checks if location is top left corner
     highest_value_location = [0,0]
+    highest_value = 0
     for row in range(4):
         for col in range(4):
             val = b[row][col]
@@ -221,61 +216,29 @@ def get_highest_value(b):
                 highest_value = val
                 highest_value_location[0] = row
                 highest_value_location[1] = col
-    return [highest_value,highest_value_location]
+    if highest_value_location[0] == 0 and highest_value_location[1] == 0:
+        return 30
+    return 0
 
-def check_highest_value_location(location):
-    #Checks if location is top left corner
-    if location[0] == 0 and location[1] == 0:
-        return True
-    return False
+def get_row_sum(row,b):
+    row_sum = 0
+    for col in range(4):
+        row_sum += b[row][col]
+    return row_sum
 
-def get_board_sum(board):
-    b_sum = 0
+
+def get_board_score(board):
+    zero_count = 0
     for row in board:
         for num in row:
-            b_sum += num
-    return b_sum
+            if num == 0:
+                zero_count += 1
+    return (3*check_cols(board)) + zero_count + check_highest_value_location(board) + (2.5*get_row_sum(0,board)) + (2 * get_row_sum(1,board)) + (1.5 * get_row_sum(2,board)) + get_row_sum(3,board)
 
-def get_heuristic_board_value(b,prev_high_val,old_sum):
-    #Highest val in top left = 9 points
-    #Empty in top left = -9 points
-    #Same values on the same row = 1 point or -1 point
-    if b == None:
-        return -1000 #Absolute low score so it will never be chosen
-    board_score = 0
-    weight1 = 5 #New high on top left
-    weight2 = 0 #No new but old on top left
-    weight3 = 5 #New high but not top left
-    weight4 = 0 #No new high and old not top left
-    weight5 = 0 #Bigger board sum
-    same_line_weight = 0 # A good future row
+def get_heuristic_board_value(direction,b):
+    return get_board_score(play_move(b,direction))
 
-    high_val_res = get_highest_value(b)
-    new_sum = get_board_sum(b)
-    highest_value = high_val_res[0]
-    highest_value_location = high_val_res[1]
-    if new_sum > old_sum:
-        board_score += weight5 * (new_sum-old_sum)
-    if prev_high_val[0] < highest_value:
-        if check_highest_value_location(highest_value_location):
-            board_score += weight1
-        elif check_highest_value_location(prev_high_val[1]):
-            board_score += (weight2 + weight3)
-        else:
-            board_score += (weight3 + weight4)
-    else:
-        if check_highest_value_location(prev_high_val[1]):
-            board_score += weight2
-        else:
-            board_score += weight4
-    #Score is (verhoogt) by amount of good_future rows, a good_future row
-    # is a row which has atleast 2 the same values which can be combined into one in the future
-    # f.e. 2 0 2 0 is a good future row, 2 4 2 0 is not because a 4 is in the way
-    board_score += check_rows_for_heuristic(b,same_line_weight)
-    board_score += check_cols_for_heuristic(b,same_line_weight)
-    return board_score
-
-def check_cols_for_heuristic(b,weight):
+def check_cols(b):
     valid_cols = []
     for index in range(4):
         col_values = []
@@ -283,7 +246,7 @@ def check_cols_for_heuristic(b,weight):
             col_values.append(row[index])
         #col_values is now a list of all values in one column
         valid_cols.extend(check_line(index, col_values))
-    return (weight * len(valid_cols))
+    return len(valid_cols)
 
 def check_line(index, values):
     valid_lines = []
@@ -304,10 +267,3 @@ def check_line(index, values):
         else:
             break
     return valid_lines
-
-def check_rows_for_heuristic(b,weight):
-    valid_rows = []
-    for row in b:
-        for index in range(4):
-            valid_rows.extend(check_line(index,row))
-    return (weight * len(valid_rows))
