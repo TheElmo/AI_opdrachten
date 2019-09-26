@@ -1,5 +1,5 @@
 import itertools
-
+from functools import lru_cache
 def fill_board(A1,H1,V1,B1,A2,H2,V2,B2):
 	board[A1] = "Aas"
 	board[A2] = "Aas"
@@ -10,7 +10,6 @@ def fill_board(A1,H1,V1,B1,A2,H2,V2,B2):
 	board[B1] = "Boer"
 	board[B2] = "Boer"
 
-
 def not_neighbour_constraint(card1,card2,constraint):
 	neigbours_list = neigbours[card1] + neigbours[card2]
 	skip = False
@@ -19,6 +18,7 @@ def not_neighbour_constraint(card1,card2,constraint):
 		name_list.append(board[n])
 	if constraint in name_list:
 		skip = True
+	#Skipt waarneer de constraint wel voorkomt in de burenlijst
 	return skip
 
 def all_neighbour_constraint(card,constraint):
@@ -29,6 +29,7 @@ def all_neighbour_constraint(card,constraint):
 		name_list.append(board[n])
 	if constraint not in name_list:
 		skip = True
+	#Skipt waarneer de constraint niet voorkomt in burenlijst
 	return skip
 
 def print_board(board):
@@ -47,15 +48,16 @@ neigbours = {0: [3], 1:[2],2:[4],3:[0,2,5],4:[2,5],5:[3,4,6,7],6:[5],7:[5]}
 for (A1,H1,V1,B1,A2,H2,V2,B2) in list(itertools.permutations(positions)):
 	fill_board(A1,H1,V1,B1,A2,H2,V2,B2)
 	#C1
-	if all_neighbour_constraint(A1,"Heer") and all_neighbour_constraint(A2,"Heer"):
+	if all_neighbour_constraint(A1,"Heer") or all_neighbour_constraint(A2,"Heer"):
 		continue
-
+	# print(A1,A2,H1,H2)
+	# print(all_neighbour_constraint(A1,"Heer") or all_neighbour_constraint(A2,"Heer"))
 	#C2
-	if all_neighbour_constraint(H1,"Vrouw") and all_neighbour_constraint(H2,"Vrouw"):
+	if all_neighbour_constraint(H1,"Vrouw") or all_neighbour_constraint(H2,"Vrouw"):
 		continue
 
 	#C3
-	if all_neighbour_constraint(V1,"Boer") and all_neighbour_constraint(V2,"Boer"):
+	if all_neighbour_constraint(V1,"Boer") or all_neighbour_constraint(V2,"Boer"):
 		continue
 
 	#C4
@@ -72,5 +74,3 @@ for (A1,H1,V1,B1,A2,H2,V2,B2) in list(itertools.permutations(positions)):
 	if not_neighbour_constraint(B1,B2,"Boer"):
 		continue
 	print_board(board)
-	print()
-	
