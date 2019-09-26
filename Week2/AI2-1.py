@@ -47,10 +47,14 @@ def nearest_neighbor(cities):
 #Uses nearest neighbor but afterwards does 10.000 iterations of 2_opt to try and remove crossings
 def nearest_neighbor_2opt(cities):
     nn_result = nearest_neighbor(cities)
-    route = find_crossings(nn_result)
-    for x in range(10):
-        print("gone through", x , "times")
-        route = find_crossings(route)
+    route = find_crossings(nn_result)[1]
+    done_buffer = int(len(route)/3)
+    while done_buffer > 0:
+        result = find_crossings(route)
+        route = result[1]
+        improved = result[0]
+        if not improved:
+            done_buffer -= 1
     return route
 
 def nearest_neighbor_2opt_real(cities):
@@ -99,18 +103,19 @@ def find_crossings(route):
             index2 = next_i
             index3 = a
             index4 = next_a
-            segment1 = [route[i].x,route[i].y,route[next_i].x,route[next_i].y]
-            segment2 = [route[a].x,route[a].y,route[next_a].x,route[next_a].y]
+            segment1 = (route[i].x,route[i].y,route[next_i].x,route[next_i].y)
+            segment2 = (route[a].x,route[a].y,route[next_a].x,route[next_a].y)
             if does_cross(segment1,segment2):
                 new_route = route.copy()
                 old_distance = distance(route[min(index1,index2)],route[max(index1,index2)]) + distance(route[min(index3,index4)],route[max(index3,index4)])
                 new_route[index2:index3+1] = reversed(route[index2:index3+1])
                 new_distance = distance(new_route[min(index1,index2)],new_route[max(index1,index2)]) + distance(new_route[min(index3,index4)],new_route[max(index3,index4)])
                 if new_distance < old_distance:
-                    route = new_route.copy()
-    return route
+                   return (True, new_route)
+    return (False,route)
 
 #Returns True if 2 line segments cross
+@lru_cache(maxsize=None)
 def does_cross(segment1,segment2):
     #Naar https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
     x1 = segment1[0]
@@ -163,7 +168,7 @@ def tour_length(tour):
 def make_cities(n, width=1000, height=1000):
     # make a set of n cities, each with random coordinates within a rectangle (width x height).
 
-    random.seed(1) # the current system time is used as a seed
+    random.seed() # the current system time is used as a seed
     # note: if we use the same seed, we get the same set of cities
 
     return frozenset(City(random.randrange(width), random.randrange(height))
@@ -195,6 +200,6 @@ def plot_tsp(algorithm, cities):
 # Total distance for 500 cities: 797860
 
 #D
-plot_tsp(nearest_neighbor_2opt,make_cities(20))
+plot_tsp(nearest_neighbor_2opt,make_cities(120))
 
 #plot_tsp(nearest_neighbor_2opt_real,make_cities(75))

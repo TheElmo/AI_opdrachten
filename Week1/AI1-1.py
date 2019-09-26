@@ -5,6 +5,7 @@ def is_goal(node):
     if(parse_node(node) == '|FGCW'):
         return True
 
+#Parse a node to the string
 def parse_node(node):
     left = ''
     right = ''
@@ -75,6 +76,6 @@ def find_all_paths(node, path=[]):
             # add every path found to paths
             for newpath in newpaths:
                 paths.append(newpath)
-
     return paths
 print(find_all_paths(node))
+#O(b^d)

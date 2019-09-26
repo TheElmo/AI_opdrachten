@@ -13,9 +13,9 @@ from collections import deque
 
 #Some more test cases
 #board = [['0','5','2'],['1','4','3'],['7','8','6']]
-#board = [['2','4','0'],['1','6','3'],['7','5','8']]
+board = [['2','4','0'],['1','6','3'],['7','5','8']]
 #board = [['2','4','3'],['1','5','6'],['0','7','8']]
-board = [['8','6','7'],['2','5','4'],['3','0','1']]
+#board = [['8','6','7'],['2','5','4'],['3','0','1']]
 #board = [['2','0','3'],['1','4','5'],['7','8','6']]
 
 des_board = [['1','2','3'],['4','5','6'],['7','8','0']]
@@ -51,7 +51,7 @@ def bfs(start_node):
 
 	while len(queue) > 0:
 		#print(queue)
-		node = queue.pop()
+		node = queue.pop()[0]
 		if parse_board(node) in visited:
 			continue
 		print_board(node)
@@ -74,6 +74,7 @@ def a_star(start_state):
 		if parse_board(state) in visited:
 			continue
 		visited.append(parse_board(state))
+		print_board(state)
 		if parse_board(state) == parse_board(des_board):
 			finished = True
 			continue
@@ -92,20 +93,6 @@ def find_new_states(board_state_current,visited=[]):
 			if board_state_current[row][col] == "0":
 				zero_pos = [row,col]
 				break
-
-	up,down,left,right = -1,-1,-1,-1
-	#Look 4 directions, if a direction goes beyond board limits it stays a -1
-	if val_num(zero_pos[0]-1,x): #Because the board is always a square it doesn't matter wether x or y is the limit
-		up = [zero_pos[0]-1,zero_pos[1]]
-
-	if val_num(zero_pos[0]+1,x):
-		down = [zero_pos[0]+1,zero_pos[1]]
-
-	if val_num(zero_pos[1]-1,x):
-		left = [zero_pos[0],zero_pos[1]-1]
-
-	if val_num(zero_pos[1]+1,x):
-		right = [zero_pos[0],zero_pos[1]+1]
 
 	#For every direction; get the new board state if the number and 0 would be switched (sliding over the number to the empty spot)
 	#If a direction is invalid (-1) the state would be False

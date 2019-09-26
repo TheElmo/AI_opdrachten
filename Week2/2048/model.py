@@ -233,7 +233,7 @@ def get_board_score(board):
         for num in row:
             if num == 0:
                 zero_count += 1
-    return (3*check_cols(board)) + zero_count + check_highest_value_location(board) + (2.5*get_row_sum(0,board)) + (2 * get_row_sum(1,board)) + (1.5 * get_row_sum(2,board)) + get_row_sum(3,board)
+    return zero_count + check_highest_value_location(board) + (2.5*get_row_sum(0,board)) + (2 * get_row_sum(1,board)) + (1.5 * get_row_sum(2,board)) + get_row_sum(3,board)
 
 def get_heuristic_board_value(direction,b):
     return get_board_score(play_move(b,direction))
