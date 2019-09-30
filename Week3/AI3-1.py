@@ -1,11 +1,5 @@
 import itertools, time
 floors = [1,2,3,4,5]
-L = "Loes"
-M = "Marja"
-N = "Niels"
-E = "Erik"
-J = "Joep"
-t0 = time.time()
 for (L,M,N,E,J) in list(itertools.permutations(floors)):
 	if N+1 == M or N-1 == M:
 		continue
@@ -19,5 +13,4 @@ for (L,M,N,E,J) in list(itertools.permutations(floors)):
 		continue
 	if L == 5:
 		continue
-	t1 = time.time()
 	print((L,M,N,E,J))
