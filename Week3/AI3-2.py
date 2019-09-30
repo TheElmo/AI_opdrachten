@@ -57,7 +57,7 @@ def print_board(board):
 # - - 7 -
 positions = [0,1,2,3,4,5,6,7]# de 8 posities van de kaarten
 board = {0: None, 1:None, 2:None, 3: None, 4: None, 5: None, 6: None, 7:None} #Het spelboord, elke positie is een key, elke kaart is de value
-neigbours = {0: [3], 1:[2],2:[4],3:[0,2,5],4:[2,5],5:[3,4,6,7],6:[5],7:[5]} #Een dictionary van buren waarbij de key een positie is en de value een tuple van grenzende posities
+neigbours = {0: [3], 1:[2],2:[4],3:[0,2,5],4:[2,5],5:[3,4,6,7],6:[5],7:[5]} #Een dictionary van buren waarbij de key een positie is en de value een lijst van grenzende posities
 
 def brute_force():
 	solutions = []
