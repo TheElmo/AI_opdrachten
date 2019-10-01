@@ -34,9 +34,7 @@ def test():
     assert len(unit_list) == 27
     assert all(len(units[s]) == 3 for s in cells)
     assert all(len(peers[s]) == 20 for s in cells)
-    assert units['C2'] == [['A2', 'B2', 'C2', 'D2', 'E2', 'F2', 'G2', 'H2', 'I2'],
-                           ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9'],
-                           ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3']]
+    assert units['C2'] == [['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9'], ['A2', 'B2', 'C2', 'D2', 'E2', 'F2', 'G2', 'H2', 'I2'], ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3']]
     assert peers['C2'] == set(['A2', 'B2', 'D2', 'E2', 'F2', 'G2', 'H2', 'I2',
                                'C1', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9',
                                'A1', 'A3', 'B1', 'B3'])
@@ -116,7 +114,6 @@ def dfs(grid):
                     return True
         return False
     return False
-    test()
 
 def dfs_arc_consistent(grid):
     if is_solved(grid):
@@ -137,7 +134,6 @@ def dfs_arc_consistent(grid):
                         return True
         return False #All options are done and unsuccesfull so return False
     return False
-    test()
 
 def make_arc_consistent(grid,cell,number):
     grid_is_changed = False
@@ -179,6 +175,7 @@ slist[17]= '..5...987.4..5...1..7......2...48....9.1.....6..2.....3..6..2.......
 slist[18]= '3.6.7...........518.........1.4.5...7.....6.....2......2.....4.....8.3.....5.....'
 slist[19]= '1.....3.8.7.4..............2.3.1...........958.........5.6...7.....8.2...4.......'
 
+test()
 for i,sudo in enumerate(slist):
     print('*** sudoku {0} ***'.format(i))
     print(sudo)
