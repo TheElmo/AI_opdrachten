@@ -184,7 +184,10 @@ for i,sudo in enumerate(slist):
     print(sudo)
     d = parse_string_to_dict(sudo)
     start_time = time.time()
+    #-----
     dfs(d)
+    #dfs_arc_consistent(d)
+    #-----
     end_time = time.time()
     hours, rem = divmod(end_time-start_time, 3600)
     minutes, seconds = divmod(rem, 60)
