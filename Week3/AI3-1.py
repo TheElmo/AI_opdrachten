@@ -13,4 +13,8 @@ for (L,M,N,E,J) in list(itertools.permutations(floors)):
 		continue
 	if L == 5:
 		continue
-	print((L,M,N,E,J))
+	print("Lies woont op verdieping: " + str(L))
+	print("Marja woont op verdieping: " + str(M))
+	print("Niels woont op verdieping: " + str(N))
+	print("Erik woont op verdieping: " + str(E))
+	print("Joep woont op verdieping: " + str(J))

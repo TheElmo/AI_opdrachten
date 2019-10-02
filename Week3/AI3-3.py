@@ -34,9 +34,7 @@ def test():
     assert len(unit_list) == 27
     assert all(len(units[s]) == 3 for s in cells)
     assert all(len(peers[s]) == 20 for s in cells)
-    assert units['C2'] == [['A2', 'B2', 'C2', 'D2', 'E2', 'F2', 'G2', 'H2', 'I2'],
-                           ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9'],
-                           ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3']]
+    assert units['C2'] == [['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9'], ['A2', 'B2', 'C2', 'D2', 'E2', 'F2', 'G2', 'H2', 'I2'], ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3']]
     assert peers['C2'] == set(['A2', 'B2', 'D2', 'E2', 'F2', 'G2', 'H2', 'I2',
                                'C1', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9',
                                'A1', 'A3', 'B1', 'B3'])
@@ -91,38 +89,67 @@ def get_empty_cells(grid):
             empty_cells.append(cell)
     return empty_cells
 
-def solve(grid,visited=[]):
-    # backtracking search a solution (DFS)
-    # your code here
-    if is_solved(grid):
-        print("+++++++++++++++++++++++++++++Solved")
-        return True
-    display(grid)
-    if grid not in visited:
-        visited.append(grid)
-        empty_cells = get_empty_cells(grid)
-        if len(empty_cells) > 0:
-            empty_cell = empty_cells[0]
-            for values in grid[empty_cell]:
-                for value in values:
-                    if no_conflict(grid,empty_cell,value):
-                        new_grid = grid.copy()
-                        new_grid[empty_cell] = value
-                        if make_arc_consistent(new_grid, empty_cell,value):
-                            if solve(new_grid,visited):
-                                return True
-            return False
-    return False
-    test()
+def get_filled_cells(grid):
+    filled_cells = []
+    for cell in grid:
+        if len(grid[cell]) == 1:
+            filled_cells.append(cell)
+    return filled_cells
 
-def make_arc_consistent(grid,cell,value):
+def dfs(grid):
+    if is_solved(grid):
+        print("---------Solved---------")
+        display(grid)
+        return True
+    #Uncomment to display grid while solving it
+    #display(grid)
+    empty_cells = get_empty_cells(grid)
+    if len(empty_cells) > 0:
+        empty_cell = empty_cells[0]
+        for number in grid[empty_cell]:
+            if no_conflict(grid,empty_cell,number):
+                new_grid = grid.copy()
+                new_grid[empty_cell] = number
+                if dfs(new_grid):
+                    return True
+        return False
+    return False
+
+def dfs_arc_consistent(grid):
+    if is_solved(grid):
+        print("---------Solved---------")
+        display(grid)
+        return True
+    #Uncomment to display grid while solving it
+    #display(grid)
+    empty_cells = get_empty_cells(grid)
+    if len(empty_cells) > 0:
+        empty_cell = empty_cells[0]
+        for number in grid[empty_cell]:
+            if no_conflict(grid,empty_cell,number):
+                new_grid = grid.copy()
+                new_grid[empty_cell] = number
+                if make_arc_consistent(new_grid, empty_cell,number):
+                    if dfs_arc_consistent(new_grid):
+                        return True
+        return False #All options are done and unsuccesfull so return False
+    return False
+
+def make_arc_consistent(grid,cell,number):
+    grid_is_changed = False
     for peer in peers[cell]:
-        if value in grid[peer]:
-            if len(grid[peer]) <= 1:
+        cell_options = grid[peer]
+        if number in cell_options:
+            if len(cell_options) <= 1:
                 return False
             else:
-                peer.replace(value,"")
-    
+                grid_is_changed = True
+                cell_options = cell_options.replace(number,"")
+                grid[peer] = cell_options
+    if grid_is_changed:
+        filled_cells = get_filled_cells(grid)
+        if not all([make_arc_consistent(grid, filled_cell, grid[filled_cell]) for filled_cell in filled_cells]):
+            return False
     return True
 
 # minimum nr of clues for a unique solution is 17
@@ -148,12 +175,16 @@ slist[17]= '..5...987.4..5...1..7......2...48....9.1.....6..2.....3..6..2.......
 slist[18]= '3.6.7...........518.........1.4.5...7.....6.....2......2.....4.....8.3.....5.....'
 slist[19]= '1.....3.8.7.4..............2.3.1...........958.........5.6...7.....8.2...4.......'
 
+test()
 for i,sudo in enumerate(slist):
     print('*** sudoku {0} ***'.format(i))
     print(sudo)
     d = parse_string_to_dict(sudo)
     start_time = time.time()
-    solve(d)
+    #-----
+    dfs(d)
+    #dfs_arc_consistent(d)
+    #-----
     end_time = time.time()
     hours, rem = divmod(end_time-start_time, 3600)
     minutes, seconds = divmod(rem, 60)

@@ -37,6 +37,37 @@ def constraint_is_neighbour(card,constraint):
 	#Skipt waarneer de constraint niet voorkomt in burenlijst (De constraint moet dus voorkomen in de burenlijst)
 	return skip
 
+#Checked of een solution alle constraints doorstaat, True bij ja, False bij nee
+def check_solution(A1,H1,V1,B1,A2,H2,V2,B2, solutions=[]):
+	#Oplossing al gevonden met omgekeerde kaarten, b1 <= => b2
+	if board in solutions:
+		return False
+	#Constraint: elke aas grenst aan een heer
+	if constraint_is_neighbour(A1,"Heer") or constraint_is_neighbour(A2,"Heer"):
+		return False
+	#Constraint: elke heer grenst aan een vrouw
+	if constraint_is_neighbour(H1,"Vrouw") or constraint_is_neighbour(H2,"Vrouw"):
+		return False
+
+	#Constraint: elke vrouw grenst aan een boer
+	if constraint_is_neighbour(V1,"Boer") or constraint_is_neighbour(V2,"Boer"):
+		return False
+
+	#Constraint: elke aas grenst NIET aan een vrouw
+	if constraint_not_neighbour(A1,A2,"Vrouw"):
+		return False
+
+	#Constraint: 2 dezelfde kaarten mogen niet grenzen
+	if constraint_not_neighbour(A1,A2,"Aas"):
+		return False
+	if constraint_not_neighbour(H1,H2,"Heer"):
+		return False
+	if constraint_not_neighbour(V1,V2,"Vrouw"):
+		return False
+	if constraint_not_neighbour(B1,B2,"Boer"):
+		return False
+	return True
+
 # Checked of het hele boord gevuld, als dit zo is wordt True teruggegeven, anders False
 def is_board_filled(board):
 	for card in board.keys():
@@ -61,38 +92,14 @@ neigbours = {0: [3], 1:[2],2:[4],3:[0,2,5],4:[2,5],5:[3,4,6,7],6:[5],7:[5]} #Een
 
 def brute_force():
 	solutions = []
+	number_of_iterations = 0
 	for (A1,H1,V1,B1,A2,H2,V2,B2) in list(itertools.permutations(positions)):
 		fill_board(A1,H1,V1,B1,A2,H2,V2,B2)
-		#Constraint: elke aas grenst aan een heer
-		if constraint_is_neighbour(A1,"Heer") or constraint_is_neighbour(A2,"Heer"):
-			continue
-		#Constraint: elke heer grenst aan een vrouw
-		if constraint_is_neighbour(H1,"Vrouw") or constraint_is_neighbour(H2,"Vrouw"):
-			continue
-
-		#Constraint: elke vrouw grenst aan een boer
-		if constraint_is_neighbour(V1,"Boer") or constraint_is_neighbour(V2,"Boer"):
-			continue
-
-		#Constraint: elke aas grenst NIET aan een vrouw
-		if constraint_not_neighbour(A1,A2,"Vrouw"):
-			continue
-
-		#Constraint: 2 dezelfde kaarten mogen niet grenzen
-		if constraint_not_neighbour(A1,A2,"Aas"):
-			continue
-		if constraint_not_neighbour(H1,H2,"Heer"):
-			continue
-		if constraint_not_neighbour(V1,V2,"Vrouw"):
-			continue
-		if constraint_not_neighbour(B1,B2,"Boer"):
-			continue
-
-		#Oplossing al gevonden met omgekeerde kaarten, b1 <= => b2
-		if board in solutions:
-			continue
-		solutions.append(board)
-		print_board(board)
+		number_of_iterations += 1
+		if check_solution(A1,H1,V1,B1,A2,H2,V2,B2, solutions):
+			solutions.append(board)
+			print_board(board)
+			print("Solved in " + str(number_of_iterations) + " iterations")
 
 #Vind de keys (positities) van alle kaarten op het boord en stuurt deze als lijst terug
 def find_board_keys(board):
@@ -127,32 +134,12 @@ def is_valid(board):
 	V1,V2 = keys[4],keys[5]
 	B1,B2 = keys[6],keys[7]
 
-	if constraint_is_neighbour(A1,"Heer") or constraint_is_neighbour(A2,"Heer"):
-		return False
-	#Constraint: elke heer grenst aan een vrouw
-	if constraint_is_neighbour(H1,"Vrouw") or constraint_is_neighbour(H2,"Vrouw"):
-		return False
-	#Constraint: elke vrouw grenst aan een boer
-	if constraint_is_neighbour(V1,"Boer") or constraint_is_neighbour(V2,"Boer"):
-		return False
-	#Constraint: elke aas grenst NIET aan een vrouw
-	if constraint_not_neighbour(A1,A2,"Vrouw"):
-		return False
-	#Constraint: 2 dezelfde kaarten mogen niet grenzen
-	if constraint_not_neighbour(A1,A2,"Aas"):
-		return False
-	if constraint_not_neighbour(H1,H2,"Heer"):
-		return False
-	if constraint_not_neighbour(V1,V2,"Vrouw"):
-		return False
-	if constraint_not_neighbour(B1,B2,"Boer"):
-		return False
-	return True
+	return check_solution(A1,H1,V1,B1,A2,H2,V2,B2)
 
 # De kaarten die nog neergelegd kunnen worden
 domain = ["Aas","Aas","Heer","Heer","Vrouw","Vrouw","Boer","Boer"]
+
 def dfs(board,key=0):
-	print(board)
 	if is_valid(board):
 		print_board(board)
 		return True
@@ -164,7 +151,9 @@ def dfs(board,key=0):
 		domain.append(value)
 		board[key] = None
 	return False
-
-
-#brute_force()
+print("BRUTE FORCE:")
+brute_force()
+board = {0: None, 1:None, 2:None, 3: None, 4: None, 5: None, 6: None, 7:None}
+print()
+print("DFS:")
 dfs(board)
