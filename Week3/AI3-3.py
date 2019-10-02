@@ -159,5 +159,3 @@ for i,sudo in enumerate(slist):
     minutes, seconds = divmod(rem, 60)
     print("duration [hh:mm:ss.ddd]: {:0>2}:{:0>2}:{:06.3f}".format(int(hours),int(minutes),seconds))
     print()
-    break
-
